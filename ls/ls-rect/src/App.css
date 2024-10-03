@@ -1,0 +1,18 @@
+.App {
+  text-align: center;
+  font-family: Arial, sans-serif;
+}
+
+svg {
+  border: 1px solid #ccc;
+  margin: 20px 0;
+}
+
+circle {
+  cursor: nwse-resize;
+}
+
+p {
+  font-size: 18px;
+  margin: 5px 0;
+}

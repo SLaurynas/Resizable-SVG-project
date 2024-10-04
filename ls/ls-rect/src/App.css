@@ -1,18 +1,95 @@
-.App {
-  text-align: center;
-  font-family: Arial, sans-serif;
+body {
+    background-color: #f0f0f0;
+    margin: 0;
+    padding: 0;
+    font-family: 'Arial', sans-serif;
 }
 
-svg {
-  border: 1px solid #ccc;
-  margin: 20px 0;
+.App {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 28px;
+}
+
+.svg-container {
+    background-color: #ecf0f1;
+    border: 2px solid #bdc3c7;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    padding: 10px;
+}
+
+.svg-container svg {
+    display: block;
+    margin: 0 auto;
+    background-color: white;
+    border: 1px solid #95a5a6;
+}
+
+.info-panel {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    background-color: #ecf0f1;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.info-item {
+    flex-basis: calc(20% - 10px);
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.info-label {
+    display: block;
+    font-size: 14px;
+    color: #7f8c8d;
+    margin-bottom: 5px;
+}
+
+.info-value {
+    display: block;
+    font-size: 18px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.status-message {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.updating {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.update-complete {
+    fill: #27ae60;
+    font-size: 24px;
+    font-weight: bold;
 }
 
 circle {
-  cursor: nwse-resize;
-}
-
-p {
-  font-size: 18px;
-  margin: 5px 0;
+    cursor: nwse-resize;
 }

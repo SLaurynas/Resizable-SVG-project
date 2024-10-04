@@ -4,5 +4,7 @@ namespace backend.Models
     {
         public int Width { get; set; }
         public int Height { get; set; }
+        public double StartX { get; set; }
+        public double StartY { get; set; }
     }
 }

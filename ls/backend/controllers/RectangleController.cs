@@ -44,24 +44,39 @@ namespace backend.Controllers
         {
             try
             {
-                // Delay 10 seconds
                 await Task.Delay(10000);
 
-                // Validation
-                if (rectangle.Width <= 0 || rectangle.Height <= 0)
+                if (rectangle == null)
                 {
-                    return BadRequest("Width and height must be greater than 0.");
+                    return BadRequest("The rectangle data is required.");
                 }
 
-                if (rectangle.X < 0 || rectangle.Y < 0)
+                // Read the current data to get the SVG dimensions
+                var currentJsonData = System.IO.File.ReadAllText(_filePath);
+                var currentRectangle = JsonSerializer.Deserialize<Rectangle>(currentJsonData, new JsonSerializerOptions
                 {
-                    return BadRequest("X and Y coordinates must be non-negative.");
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                });
+
+                if (currentRectangle == null)
+                {
+                    return BadRequest("Could not read current rectangle data.");
                 }
 
-                // New validation: width must not exceed height
+                // Use the SVG dimensions from the current data
+                rectangle.SvgWidth = currentRectangle.SvgWidth;
+                rectangle.SvgHeight = currentRectangle.SvgHeight;
+
+                // Enforce boundaries
+                rectangle.Width = Math.Max(1, Math.Min(rectangle.Width, rectangle.SvgWidth - rectangle.X));
+                rectangle.Height = Math.Max(1, Math.Min(rectangle.Height, rectangle.SvgHeight - rectangle.Y));
+                rectangle.X = Math.Max(0, Math.Min(rectangle.X, rectangle.SvgWidth - rectangle.Width));
+                rectangle.Y = Math.Max(0, Math.Min(rectangle.Y, rectangle.SvgHeight - rectangle.Height));
+
+                // Enforce width cannot exceed height
                 if (rectangle.Width > rectangle.Height)
                 {
-                    return BadRequest("Width must not exceed height.");
+                    return BadRequest("Width cannot exceed height.");
                 }
 
                 var options = new JsonSerializerOptions

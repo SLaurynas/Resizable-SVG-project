@@ -3,7 +3,7 @@ import { fetchRectangleDimensions, updateRectangleDimensions } from './services/
 import './App.css';
 
 function App() {
-    const [rectangle, setRectangle] = useState({ width: 0, height: 0, x: 0, y: 0 });
+    const [rectangle, setRectangle] = useState({ width: 0, height: 0, x: 0, y: 0, svgWidth: 0, svgHeight: 0 });
     const [loading, setLoading] = useState(true);
     const [isResizing, setIsResizing] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
@@ -16,6 +16,7 @@ function App() {
     const startPositionRef = useRef({ x: 0, y: 0 });
     const updateTimeoutRef = useRef(null);
 
+    // Fetch initial rectangle data on component mount
     useEffect(() => {
         const getRectangleData = async () => {
             try {
@@ -32,6 +33,39 @@ function App() {
         getRectangleData();
     }, []);
 
+    const enforceBoundaries = useCallback((rect, prev) => {
+        const { width, height, x, y, svgWidth, svgHeight } = rect;
+        let newX = x;
+        let newY = y;
+        let newWidth = width;
+        let newHeight = height;
+
+        // Prevent moving outside left and top boundaries
+        if (newX < 0) newX = 0;
+        if (newY < 0) newY = 0;
+
+        // Prevent moving outside right and bottom boundaries
+        if (newX + newWidth > svgWidth) newX = svgWidth - newWidth;
+        if (newY + newHeight > svgHeight) newY = svgHeight - newHeight;
+
+        // If dimensions would exceed boundaries, keep previous values
+        if (newWidth > svgWidth) newWidth = prev.width;
+        if (newHeight > svgHeight) newHeight = prev.height;
+
+        // Ensure X and Y are not negative
+        newX = Math.max(0, newX);
+        newY = Math.max(0, newY);
+
+        return {
+            width: newWidth,
+            height: newHeight,
+            x: newX,
+            y: newY,
+            svgWidth,
+            svgHeight
+        };
+    }, []);
+
     const updateRectangleWithDebounce = useCallback((updatedRectangle) => {
         if (updateTimeoutRef.current) {
             clearTimeout(updateTimeoutRef.current);
@@ -39,18 +73,20 @@ function App() {
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
         }
+        abortControllerRef.current = new AbortController();
+
+
         updateTimeoutRef.current = setTimeout(() => {
-            updateRectangleOnServer(updatedRectangle);
+            updateRectangleOnServer(updatedRectangle, abortControllerRef.current.signal);
         }, 500);
     }, []);
 
-    const updateRectangleOnServer = async (rectangleData) => {
+    const updateRectangleOnServer = async (rectangleData, signal) => {
         setIsUpdating(true);
         setError(null);
-        abortControllerRef.current = new AbortController();
 
         try {
-            const updatedRectangle = await updateRectangleDimensions(rectangleData, abortControllerRef.current.signal);
+            const updatedRectangle = await updateRectangleDimensions(rectangleData, signal);
             setRectangle(updatedRectangle);
             setUpdateComplete(true);
             setTimeout(() => setUpdateComplete(false), 2000);
@@ -61,80 +97,93 @@ function App() {
             }
         } finally {
             setIsUpdating(false);
-            abortControllerRef.current = null;
         }
     };
 
     const handleInteraction = useCallback((e) => {
         if (!isResizing && !isDragging) return;
 
-        const svg = svgRef.current;
-        const svgRect = svg.getBoundingClientRect();
-        const svgWidth = svgRect.width;
-        const svgHeight = svgRect.height;
-
         const dx = e.clientX - startPositionRef.current.x;
         const dy = e.clientY - startPositionRef.current.y;
 
         setRectangle(prev => {
-            let newWidth = prev.width;
-            let newHeight = prev.height;
-            let newX = prev.x;
-            let newY = prev.y;
+            let newRect = { ...prev };
 
             if (isDragging) {
-                newX = Math.max(0, Math.min(svgWidth - prev.width, prev.x + dx));
-                newY = Math.max(0, Math.min(svgHeight - prev.height, prev.y + dy));
+                newRect.x += dx;
+                newRect.y += dy;
             } else if (isResizing) {
                 switch (resizeHandle) {
                     case 'top':
-                        newHeight = Math.max(10, prev.height - dy);
-                        newY = Math.max(0, Math.min(prev.y + prev.height - 10, prev.y + dy));
+                        newRect.y += dy;
+                        newRect.height -= dy;
                         break;
                     case 'right':
-                        newWidth = Math.max(10, Math.min(svgWidth - prev.x, prev.width + dx));
+                        newRect.width += dx;
                         break;
                     case 'bottom':
-                        newHeight = Math.max(10, Math.min(svgHeight - prev.y, prev.height + dy));
+                        newRect.height += dy;
                         break;
                     case 'left':
-                        newWidth = Math.max(10, prev.width - dx);
-                        newX = Math.max(0, Math.min(prev.x + prev.width - 10, prev.x + dx));
+                        newRect.x += dx;
+                        newRect.width -= dx;
                         break;
                     case 'topLeft':
-                        newWidth = Math.max(10, prev.width - dx);
-                        newHeight = Math.max(10, prev.height - dy);
-                        newX = Math.max(0, Math.min(prev.x + prev.width - 10, prev.x + dx));
-                        newY = Math.max(0, Math.min(prev.y + prev.height - 10, prev.y + dy));
+                        newRect.x += dx;
+                        newRect.y += dy;
+                        newRect.width -= dx;
+                        newRect.height -= dy;
                         break;
                     case 'topRight':
-                        newWidth = Math.max(10, Math.min(svgWidth - prev.x, prev.width + dx));
-                        newHeight = Math.max(10, prev.height - dy);
-                        newY = Math.max(0, Math.min(prev.y + prev.height - 10, prev.y + dy));
+                        newRect.y += dy;
+                        newRect.width += dx;
+                        newRect.height -= dy;
                         break;
                     case 'bottomLeft':
-                        newWidth = Math.max(10, prev.width - dx);
-                        newHeight = Math.max(10, Math.min(svgHeight - prev.y, prev.height + dy));
-                        newX = Math.max(0, Math.min(prev.x + prev.width - 10, prev.x + dx));
+                        newRect.x += dx;
+                        newRect.width -= dx;
+                        newRect.height += dy;
                         break;
                     case 'bottomRight':
-                        newWidth = Math.max(10, Math.min(svgWidth - prev.x, prev.width + dx));
-                        newHeight = Math.max(10, Math.min(svgHeight - prev.y, prev.height + dy));
+                        newRect.width += dx;
+                        newRect.height += dy;
                         break;
                 }
             }
 
-            return {
-                width: Math.round(newWidth),
-                height: Math.round(newHeight),
-                x: Math.round(newX),
-                y: Math.round(newY)
-            };
+            const boundedRect = enforceBoundaries(newRect, prev);
+            updateRectangleWithDebounce(boundedRect);
+            return boundedRect;
         });
 
         startPositionRef.current = { x: e.clientX, y: e.clientY };
-    }, [isDragging, isResizing, resizeHandle]);
+    }, [isDragging, isResizing, resizeHandle, enforceBoundaries, updateRectangleWithDebounce]);
 
+    const handleInputChange = useCallback((e) => {
+        const { name, value } = e.target;
+        
+        if (value !== '' && value.length > 3) return;
+
+        const numValue = value === '' ? 0 : Math.max(0, parseInt(value, 10));
+        
+        setRectangle(prev => {
+            const updatedRect = { ...prev, [name]: numValue };
+            const boundedRect = enforceBoundaries(updatedRect, prev);
+            updateRectangleWithDebounce(boundedRect);
+            return boundedRect;
+        });
+    }, [enforceBoundaries, updateRectangleWithDebounce]);
+
+    const handleSpinnerClick = useCallback((prop, increment) => {
+        setRectangle(prev => {
+            const updatedRect = { ...prev, [prop]: prev[prop] + increment };
+            const boundedRect = enforceBoundaries(updatedRect, prev);
+            updateRectangleWithDebounce(boundedRect);
+            return boundedRect;
+        });
+    }, [enforceBoundaries, updateRectangleWithDebounce]);
+
+    // Is resizing the rectangle
     const startResize = useCallback((e, handle) => {
         e.preventDefault();
         setIsResizing(true);
@@ -148,12 +197,14 @@ function App() {
         }
     }, []);
 
+    // Is dragging the rectangle
     const startDrag = useCallback((e) => {
         e.preventDefault();
         setIsDragging(true);
         startPositionRef.current = { x: e.clientX, y: e.clientY };
     }, []);
 
+    // Stopped resizing or dragging the rectangle
     const stopInteraction = useCallback(() => {
         if (!isResizing && !isDragging) return;
         setIsResizing(false);
@@ -162,34 +213,7 @@ function App() {
         updateRectangleWithDebounce(rectangle);
     }, [isResizing, isDragging, rectangle, updateRectangleWithDebounce]);
 
-    const handleInputChange = useCallback((e) => {
-        const { name, value } = e.target;
-        const numValue = parseInt(value, 10);
-        
-        if (!isNaN(numValue)) {
-            setRectangle(prev => {
-                const svgRect = svgRef.current.getBoundingClientRect();
-                const svgWidth = svgRect.width;
-                const svgHeight = svgRect.height;
-
-                let newValue = numValue;
-                if (name === 'width') {
-                    newValue = Math.max(10, Math.min(svgWidth - prev.x, numValue));
-                } else if (name === 'height') {
-                    newValue = Math.max(10, Math.min(svgHeight - prev.y, numValue));
-                } else if (name === 'x') {
-                    newValue = Math.max(0, Math.min(svgWidth - prev.width, numValue));
-                } else if (name === 'y') {
-                    newValue = Math.max(0, Math.min(svgHeight - prev.height, numValue));
-                }
-
-                const updatedRectangle = { ...prev, [name]: newValue };
-                updateRectangleWithDebounce(updatedRectangle);
-                return updatedRectangle;
-            });
-        }
-    }, [updateRectangleWithDebounce]);
-
+    // Render resize handles for the rectangle
     const renderResizeHandles = useCallback(() => {
         const handles = [
             { cx: 0, cy: 0, cursor: 'nwse-resize', handle: 'topLeft' },
@@ -215,27 +239,19 @@ function App() {
         ));
     }, [rectangle, startResize]);
 
-    const handleSpinnerClick = (prop, increment) => {
-        setRectangle(prev => {
-            const newValue = prev[prop] + increment;
-            const updatedRectangle = { ...prev, [prop]: newValue };
-            updateRectangleWithDebounce(updatedRectangle);
-            return updatedRectangle;
-        });
-    };
-
+    // Show loading state while fetching initial data
     if (loading) {
         return <div>Loading...</div>;
     }
-
+    // Render the main application UI
     return (
         <div className="App">
             <h1>Interactive Rectangle</h1>
             <div className="svg-container">
                 <svg 
                     ref={svgRef}
-                    width="600" 
-                    height="400" 
+                    width={rectangle.svgWidth} 
+                    height={rectangle.svgHeight} 
                     onMouseMove={handleInteraction} 
                     onMouseUp={stopInteraction} 
                     onMouseLeave={stopInteraction}
@@ -261,8 +277,8 @@ function App() {
                                 name={prop}
                                 value={rectangle[prop]}
                                 onChange={handleInputChange}
-                                min={prop === 'width' || prop === 'height' ? "10" : "0"}
                                 className="info-input"
+                                maxLength="3"
                             />
                             <div className="input-spinner">
                                 <button className="spinner-button" onClick={() => handleSpinnerClick(prop, 1)}>▲</button>

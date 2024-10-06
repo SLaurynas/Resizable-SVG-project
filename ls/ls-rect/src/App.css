@@ -1,3 +1,5 @@
+/* Main styling for the Interactive Rectangle application */
+
 body {
     background-color: #f0f0f0;
     margin: 0;
@@ -74,15 +76,9 @@ h1 {
     font-size: 18px;
     font-weight: bold;
     color: #2c3e50;
-    padding: 0 19px 0 0; 
+    padding: 0 19px 0 0;
     border: none;
     text-align: center;
-}
-
-.info-input::-webkit-inner-spin-button,
-.info-input::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
 }
 
 .input-spinner {
@@ -129,25 +125,11 @@ h1 {
     text-align: center;
 }
 
-.updating {
-    background-color: #fff3cd;
-    color: #856404;
-}
+.updating { background-color: #fff3cd; color: #856404; }
+.error { background-color: #f8d7da; color: #721c24; }
+.update-complete { color: #27ae60; font-size: 24px; font-weight: bold; }
 
-.error {
-    background-color: #f8d7da;
-    color: #721c24;
-}
-
-.update-complete {
-    fill: #27ae60;
-    font-size: 24px;
-    font-weight: bold;
-}
-
-circle {
-    cursor: nwse-resize;
-}
+circle { cursor: nwse-resize; }
 
 .info-input:focus {
     outline: none;
@@ -162,7 +144,7 @@ circle {
 }
 
 .info-value {
-    width: 100px;
+    width: 80px;
     height: 30px;
     font-size: 18px;
     font-weight: bold;

@@ -12,22 +12,22 @@ This project consists of a React frontend and an ASP.NET Core backend for displa
 
 ## Setup Instructions
 
--Step 1: Clone the Repository
+Step 1: Clone the Repository
 clone https://github.com/SLaurynas/Resizable-SVG-project
 
--Step 2: Backend Setup
+Step 2: Backend Setup
 in the terminal:
 
-cd ../backend
-dotnet restore
-dotnet run
+- cd ../backend
+- dotnet restore
+- dotnet run
 
--Step 3: Frontend Setup
+Step 3: Frontend Setup
 in the terminal:
 
-cd ../ls-rect
-npm install
-npm start
+- cd ../ls-rect
+- npm install
+- npm start
 
 ## Debugging Information
 

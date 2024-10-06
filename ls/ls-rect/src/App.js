@@ -215,6 +215,15 @@ function App() {
         ));
     }, [rectangle, startResize]);
 
+    const handleSpinnerClick = (prop, increment) => {
+        setRectangle(prev => {
+            const newValue = prev[prop] + increment;
+            const updatedRectangle = { ...prev, [prop]: newValue };
+            updateRectangleWithDebounce(updatedRectangle);
+            return updatedRectangle;
+        });
+    };
+
     if (loading) {
         return <div>Loading...</div>;
     }
@@ -245,19 +254,25 @@ function App() {
             <div className="info-panel">
                 {['width', 'height', 'x', 'y'].map(prop => (
                     <div key={prop} className="info-item">
-                        <span className="info-label">{prop.charAt(0).toUpperCase() + prop.slice(1)}:</span>
-                        <input
-                            type="number"
-                            name={prop}
-                            value={rectangle[prop]}
-                            onChange={handleInputChange}
-                            min={prop === 'width' || prop === 'height' ? "10" : "0"}
-                            className="info-input"
-                        />
+                        <span className="info-label">{prop.charAt(0).toUpperCase() + prop.slice(1)}</span>
+                        <div className="info-input-container">
+                            <input
+                                type="number"
+                                name={prop}
+                                value={rectangle[prop]}
+                                onChange={handleInputChange}
+                                min={prop === 'width' || prop === 'height' ? "10" : "0"}
+                                className="info-input"
+                            />
+                            <div className="input-spinner">
+                                <button className="spinner-button" onClick={() => handleSpinnerClick(prop, 1)}>▲</button>
+                                <button className="spinner-button" onClick={() => handleSpinnerClick(prop, -1)}>▼</button>
+                            </div>
+                        </div>
                     </div>
                 ))}
                 <div className="info-item">
-                    <span className="info-label">Perimeter:</span>
+                    <span className="info-label">Perimeter</span>
                     <span className="info-value">{2 * (rectangle.width + rectangle.height)}px</span>
                 </div>
             </div>

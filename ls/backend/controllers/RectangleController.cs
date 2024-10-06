@@ -58,6 +58,12 @@ namespace backend.Controllers
                     return BadRequest("X and Y coordinates must be non-negative.");
                 }
 
+                // New validation: width must not exceed height
+                if (rectangle.Width > rectangle.Height)
+                {
+                    return BadRequest("Width must not exceed height.");
+                }
+
                 var options = new JsonSerializerOptions
                 {
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase,

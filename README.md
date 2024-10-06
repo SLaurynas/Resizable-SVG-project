@@ -1,4 +1,5 @@
-![image](https://github.com/user-attachments/assets/06f9a980-8fb5-4d08-bab1-2466444851e3)
+![image](https://github.com/user-attachments/assets/17a065d0-b564-45ae-82b8-d348030f1491)
+
 # Resizable Rectangle Project
 
 This project consists of a React frontend and an ASP.NET Core backend for displaying and resizing a rectangle.

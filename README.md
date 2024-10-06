@@ -21,3 +21,4 @@ When debugging this project, keep the following points in mind:
 4. **Resizing Validation**: The backend implements a 10-second delay and validates that the width doesn't exceed the height.
 
 5. **Cancellation of Updates**: The frontend uses the `AbortController` API to cancel ongoing update requests when a new resize operation starts.
+![image](https://github.com/user-attachments/assets/06f9a980-8fb5-4d08-bab1-2466444851e3)

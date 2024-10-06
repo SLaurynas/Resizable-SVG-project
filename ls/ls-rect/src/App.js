@@ -14,12 +14,13 @@ function App() {
     const svgRef = useRef(null);
     const abortControllerRef = useRef(null);
     const startPositionRef = useRef({ x: 0, y: 0 });
+    const updateTimeoutRef = useRef(null);
 
     useEffect(() => {
         const getRectangleData = async () => {
             try {
                 const data = await fetchRectangleDimensions();
-                setRectangle({ ...data, x: 0, y: 0 }); // Initialize position
+                setRectangle(data);
             } catch (error) {
                 console.error("Error fetching rectangle data:", error);
                 setError("Failed to load rectangle data.");
@@ -50,31 +51,14 @@ function App() {
         startPositionRef.current = { x: e.clientX, y: e.clientY };
     };
 
-    const stopInteraction = async () => {
+    const stopInteraction = () => {
         if (!isResizing && !isDragging) return;
         setIsResizing(false);
         setIsDragging(false);
         setResizeHandle(null);
-        setIsUpdating(true);
-        setError(null);
 
-        abortControllerRef.current = new AbortController();
-
-        try {
-            const updatedRectangle = await updateRectangleDimensions(rectangle, abortControllerRef.current.signal);
-            setRectangle(prev => ({ ...updatedRectangle, x: prev.x, y: prev.y }));
-            setUpdateComplete(true);
-            setTimeout(() => setUpdateComplete(false), 2000);
-        } catch (error) {
-            if (error.name === 'AbortError') {
-                console.log('Update was cancelled');
-            } else {
-                console.error("Error updating rectangle dimensions:", error);
-                setError(error.message);
-            }
-        } finally {
-            setIsUpdating(false);
-        }
+        // Use the debounced update function
+        updateRectangleWithDebounce(rectangle);
     };
 
     const handleInteraction = (e) => {
@@ -178,6 +162,81 @@ function App() {
         ));
     };
 
+    const updateRectangleWithDebounce = (updatedRectangle) => {
+        // Clear any existing timeout
+        if (updateTimeoutRef.current) {
+            clearTimeout(updateTimeoutRef.current);
+        }
+
+        // Abort any pending request
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+
+        // Set a new timeout to update after a short delay
+        updateTimeoutRef.current = setTimeout(() => {
+            updateRectangleOnServer(updatedRectangle);
+        }, 500); // 500ms delay
+    };
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        const numValue = parseInt(value, 10);
+        
+        if (!isNaN(numValue)) {
+            setRectangle(prev => {
+                const svgRect = svgRef.current.getBoundingClientRect();
+                const svgWidth = svgRect.width;
+                const svgHeight = svgRect.height;
+
+                let newValue = numValue;
+                if (name === 'width') {
+                    newValue = Math.max(10, Math.min(svgWidth - prev.x, numValue));
+                } else if (name === 'height') {
+                    newValue = Math.max(10, Math.min(svgHeight - prev.y, numValue));
+                } else if (name === 'x') {
+                    newValue = Math.max(0, Math.min(svgWidth - prev.width, numValue));
+                } else if (name === 'y') {
+                    newValue = Math.max(0, Math.min(svgHeight - prev.height, numValue));
+                }
+
+                const updatedRectangle = {
+                    ...prev,
+                    [name]: newValue
+                };
+
+                updateRectangleWithDebounce(updatedRectangle);
+
+                return updatedRectangle;
+            });
+        }
+    };
+
+    const updateRectangleOnServer = async (rectangleData) => {
+        setIsUpdating(true);
+        setError(null);
+
+        // Create a new AbortController for this request
+        abortControllerRef.current = new AbortController();
+
+        try {
+            const updatedRectangle = await updateRectangleDimensions(rectangleData, abortControllerRef.current.signal);
+            setRectangle(updatedRectangle);
+            setUpdateComplete(true);
+            setTimeout(() => setUpdateComplete(false), 2000);
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log('Update was cancelled');
+            } else {
+                console.error("Error updating rectangle dimensions:", error);
+                setError(error.message);
+            }
+        } finally {
+            setIsUpdating(false);
+            abortControllerRef.current = null;
+        }
+    };
+
     if (loading) {
         return <div>Loading...</div>;
     }
@@ -208,19 +267,47 @@ function App() {
             <div className="info-panel">
                 <div className="info-item">
                     <span className="info-label">Width:</span>
-                    <span className="info-value">{rectangle.width}px</span>
+                    <input
+                        type="number"
+                        name="width"
+                        value={rectangle.width}
+                        onChange={handleInputChange}
+                        min="10"
+                        className="info-input"
+                    />
                 </div>
                 <div className="info-item">
                     <span className="info-label">Height:</span>
-                    <span className="info-value">{rectangle.height}px</span>
+                    <input
+                        type="number"
+                        name="height"
+                        value={rectangle.height}
+                        onChange={handleInputChange}
+                        min="10"
+                        className="info-input"
+                    />
                 </div>
                 <div className="info-item">
                     <span className="info-label">X:</span>
-                    <span className="info-value">{rectangle.x}px</span>
+                    <input
+                        type="number"
+                        name="x"
+                        value={rectangle.x}
+                        onChange={handleInputChange}
+                        min="0"
+                        className="info-input"
+                    />
                 </div>
                 <div className="info-item">
                     <span className="info-label">Y:</span>
-                    <span className="info-value">{rectangle.y}px</span>
+                    <input
+                        type="number"
+                        name="y"
+                        value={rectangle.y}
+                        onChange={handleInputChange}
+                        min="0"
+                        className="info-input"
+                    />
                 </div>
                 <div className="info-item">
                     <span className="info-label">Perimeter:</span>

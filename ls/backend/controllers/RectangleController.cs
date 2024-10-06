@@ -48,9 +48,14 @@ namespace backend.Controllers
                 await Task.Delay(10000);
 
                 // Validation
-                if (rectangle.Width > rectangle.Height)
+                if (rectangle.Width <= 0 || rectangle.Height <= 0)
                 {
-                    return BadRequest("Width cannot exceed height.");
+                    return BadRequest("Width and height must be greater than 0.");
+                }
+
+                if (rectangle.X < 0 || rectangle.Y < 0)
+                {
+                    return BadRequest("X and Y coordinates must be non-negative.");
                 }
 
                 var options = new JsonSerializerOptions

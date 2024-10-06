@@ -13,7 +13,7 @@ export const updateRectangleDimensions = async (dimensions, signal) => {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(dimensions),
-        signal, //AbortSignal
+        signal
     });
     if (!response.ok) {
         const errorText = await response.text();
